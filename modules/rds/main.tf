@@ -11,7 +11,7 @@ resource "aws_db_instance" "main" {
   identifier             = "${var.project_name}-db"
   engine                 = "postgres"
   engine_version         = "16.1"
-  instance_class         = "db.t3.micro"
+  instance_class         = var.instance_class
   allocated_storage      = 20
   db_name                = "webappdb"
   username               = var.db_username
@@ -20,7 +20,7 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [var.security_group_id]
   publicly_accessible    = false
   skip_final_snapshot    = true
-  multi_az               = false
+  multi_az               = var.multi_az
 
   tags = {
     Name = "${var.project_name}-db"

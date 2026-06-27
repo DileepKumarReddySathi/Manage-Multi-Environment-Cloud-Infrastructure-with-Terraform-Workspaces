@@ -9,12 +9,15 @@ terraform {
   }
 
   backend "s3" {
-    # Replace these with your actual bucket name and region
+    # Replace these with your actual bucket name, dynamodb table, and region
     # bucket         = "your-terraform-state-bucket-name"
-    # key            = "prod/terraform.tfstate"
+    # key            = "terraform.tfstate"
     # region         = "us-east-1"
     # dynamodb_table = "terraform-state-lock"
     # encrypt        = true
+    #
+    # Note: Terraform workspaces will automatically store state in:
+    # s3://<bucket>/env:/<workspace_name>/terraform.tfstate
   }
 }
 
@@ -24,7 +27,7 @@ provider "aws" {
   default_tags {
     tags = {
       Project     = var.project_name
-      Environment = var.environment
+      Environment = terraform.workspace
       ManagedBy   = "Terraform"
     }
   }

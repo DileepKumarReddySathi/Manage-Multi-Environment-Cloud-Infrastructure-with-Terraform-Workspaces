@@ -61,65 +61,65 @@ Before deploying, ensure you have the following installed and configured:
 2. **AWS CLI**: [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 3. **AWS Credentials**: Configure your AWS credentials using `aws configure` so Terraform can authenticate with your AWS account.
 
-## S3 Backend Configuration
+## S3 Backend Configuration (State Locking)
 
-This project uses a remote S3 backend to store the Terraform state file. 
-
-**Note: You must manually create the S3 bucket before initializing Terraform.**
+This project uses a remote S3 backend with DynamoDB for state locking to support team collaboration and prevent concurrent state modifications. 
 
 1. Create an S3 bucket in your AWS account (e.g., `my-terraform-state-bucket-12345`).
-2. Open `providers.tf` and uncomment the `backend "s3"` block.
-3. Replace the placeholder `bucket` name and `region` with your newly created bucket's details.
+2. Create a DynamoDB table named `terraform-state-lock` with a primary key `LockID` (String).
+3. Open `providers.tf` and update the `backend "s3"` block with your bucket and table names.
 
 ```hcl
   backend "s3" {
-    bucket = "my-terraform-state-bucket-12345"
-    key    = "prod/terraform.tfstate"
-    region = "us-east-1"
+    bucket         = "my-terraform-state-bucket-12345"
+    key            = "terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-state-lock"
+    encrypt        = true
   }
 ```
 
-## Configuration & Deployment Instructions
+Terraform automatically prefixes state files based on the active workspace (e.g., `env:/dev/terraform.tfstate`).
 
-### 1. Configure Variables
+## Multi-Environment Workspaces
 
-Create or modify the `terraform.tfvars` file in the root directory to define your environment specifics.
+This project uses Terraform Workspaces to manage `dev`, `staging`, and `production` environments from a single codebase. Environment-specific settings (like instance sizes) are defined in `.tfvars` files.
 
-```hcl
-aws_region           = "us-east-1"
-project_name         = "web-app-infra"
-environment          = "production"
+### Deploying Locally
 
-# Note: In a real-world scenario, pass these securely via environment variables (e.g., TF_VAR_db_username)
-db_username = "dbadmin"
-db_password = "SuperSecretPassword123!"
-```
+1. **Initialize Terraform:**
+   ```bash
+   terraform init
+   ```
 
-### 2. Initialize Terraform
+2. **Select or Create a Workspace:**
+   ```bash
+   terraform workspace select dev || terraform workspace new dev
+   ```
 
-Initialize the working directory containing Terraform configuration files. This command downloads the required providers and initializes the backend.
+3. **Plan Configuration:**
+   Pass the corresponding environment variables file to the plan command:
+   ```bash
+   terraform plan -var-file=dev.tfvars
+   ```
 
-```bash
-terraform init
-```
+4. **Apply Configuration:**
+   ```bash
+   terraform apply -var-file=dev.tfvars
+   ```
 
-### 3. Review the Execution Plan
+## CI/CD Pipeline & Automation
 
-Run a plan to see what resources Terraform will create. This is a safe step that makes no changes to your AWS environment.
+A GitHub Actions pipeline automates the validation, cost estimation, and deployment process.
 
-```bash
-terraform plan
-```
+- **Pull Requests (to `main`):** Automatically runs `terraform fmt`, `terraform validate`, and `terraform plan` against the `staging` workspace. It also uses **Infracost** to post a cost estimation comment on the PR.
+- **Merge to `main`:** Automatically applies the infrastructure to the `staging` environment.
+- **Production Deployment:** Triggered after the staging deployment, but requires **manual approval** via GitHub Environments (`production`).
 
-### 4. Apply the Configuration
-
-Deploy the infrastructure. Terraform will prompt you to confirm the action. Type `yes` to proceed.
-
-```bash
-terraform apply
-```
-
-Upon successful completion, Terraform will output the `alb_dns_name`. You can copy this URL and paste it into your browser to verify the web application is running.
+To set up the pipeline, ensure the following secrets are added to your GitHub repository:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `INFRACOST_API_KEY`
 
 ## Teardown / Destroy Instructions
 

@@ -10,11 +10,6 @@ variable "project_name" {
   default     = "scalable-web-app"
 }
 
-variable "environment" {
-  description = "The deployment environment (e.g., dev, staging, prod)"
-  type        = string
-  default     = "prod"
-}
 
 variable "vpc_cidr" {
   description = "The CIDR block for the VPC"
@@ -44,4 +39,22 @@ variable "db_password" {
   description = "Database administrator password"
   type        = string
   sensitive   = true
+}
+
+variable "ec2_instance_type" {
+  description = "The EC2 instance type for the compute nodes"
+  type        = string
+  default     = "t2.micro"
+}
+
+variable "rds_instance_class" {
+  description = "The RDS instance class"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "rds_multi_az" {
+  description = "Enable Multi-AZ for RDS"
+  type        = bool
+  default     = false
 }

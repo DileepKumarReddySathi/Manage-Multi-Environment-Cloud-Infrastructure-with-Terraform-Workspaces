@@ -3,10 +3,7 @@ variable "project_name" {
   type        = string
 }
 
-variable "environment" {
-  description = "The deployment environment"
-  type        = string
-}
+
 
 variable "private_subnets" {
   description = "List of private subnet IDs for DB subnet group"
@@ -28,4 +25,14 @@ variable "db_password" {
   description = "Database administrator password"
   type        = string
   sensitive   = true
+}
+
+variable "instance_class" {
+  description = "The RDS instance class"
+  type        = string
+}
+
+variable "multi_az" {
+  description = "Enable Multi-AZ for RDS"
+  type        = bool
 }
